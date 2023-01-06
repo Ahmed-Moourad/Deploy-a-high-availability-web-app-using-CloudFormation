@@ -1,0 +1,19 @@
+[
+	{
+		"ParameterKey": "EnvironmentName",
+		"ParameterValue": "UdacityProject"
+	},
+	{
+		"ParameterKey": "MyHomeIP",
+		"ParameterValue": "Put your IP"   
+	},
+	{
+		"ParameterKey": "WebAppIMG",
+		"ParameterValue": "ami-061dbd1209944525c"   
+	},
+	{
+		"ParameterKey": "BastionIMG",
+		"ParameterValue": "ami-0b5eea76982371e91"   
+	}
+
+]

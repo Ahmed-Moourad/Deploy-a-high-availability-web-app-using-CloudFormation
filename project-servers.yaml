@@ -1,0 +1,216 @@
+Description: >
+    
+    This is Ahmed Mourad Solution For Udacity Project
+    This Template Deploy the servers for our Application as Next:
+    1 ALB
+    4 Webservers ... 2 Webserver/Private Subnet
+    1 Bastion host to SSH to our servers and troubleshoot
+
+Parameters:
+
+    EnvironmentName:
+        Description: An environment name that will be prefixed to resource names
+        Type: String
+  
+    WebAppIMG:
+        Description: AMI to use for our base image in our WebAPP
+        Type: String 
+
+    BastionIMG:
+        Description: AMI to use for our base image in our WebAPP
+        Type: String
+
+    MyHomeIP:
+        Description: this is my home IP
+        Type: String 
+
+Resources:
+
+  LBSecGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Allow http to our load balancer
+      VpcId:
+        Fn::ImportValue:
+          !Sub "${EnvironmentName}-VPCID"
+      SecurityGroupIngress:
+      - IpProtocol: tcp
+        FromPort: 80
+        ToPort: 80
+        CidrIp: 0.0.0.0/0
+      SecurityGroupEgress:
+      - IpProtocol: tcp
+        FromPort: 80
+        ToPort: 80
+        CidrIp: 0.0.0.0/0
+  
+  WebServerSecGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Allow http to our hosts and SSH from our VPC only
+      VpcId:
+        Fn::ImportValue:
+          !Sub "${EnvironmentName}-VPCID"
+      SecurityGroupIngress:
+      - IpProtocol: tcp
+        FromPort: 80
+        ToPort: 80
+        CidrIp: 0.0.0.0/0
+      - IpProtocol: tcp
+        FromPort: 22
+        ToPort: 22
+        CidrIp: 10.0.0.0/16   #from our vpc only
+      SecurityGroupEgress:
+      - IpProtocol: tcp
+        FromPort: 0
+        ToPort: 65535
+        CidrIp: 0.0.0.0/0
+  
+  WebAppLaunchConfig:
+    Type: AWS::AutoScaling::LaunchConfiguration
+    Properties:
+      ImageId: !Ref WebAppIMG    # This is AMI ID of Ubuntu 18 Linux (64bit)machine ... This is the ID in N.Virginia (us-east-1)Region
+      InstanceType: t3.small          # This Gives you 2vCPU/ 4GB RAM    #Reminder: change this with smaller size(t2.micro) for your demo
+      IamInstanceProfile: !Ref WebAppInstanceProfile
+      UserData:
+        Fn::Base64: !Sub |
+          #!/bin/bash
+          sudo apt-get update -y
+          sudo apt-get install apache2 -y
+          sudo systemctl start apache2.service
+          cd /var/www/html
+          echo "it works! Udagram, Udacity ... by Ahmed Mourad!" > index.html          
+      SecurityGroups:
+      - Ref: WebServerSecGroup
+      BlockDeviceMappings:
+      - DeviceName: "/dev/sdk"
+        Ebs:
+          VolumeSize: '10'
+      
+  WebAppGroup:
+    Type: AWS::AutoScaling::AutoScalingGroup
+    Properties:
+      VPCZoneIdentifier:
+      - Fn::ImportValue: 
+          !Sub "${EnvironmentName}-PRIV-NETS"
+      LaunchConfigurationName:
+        Ref: WebAppLaunchConfig
+      MinSize: '4'    #Reminder: change this for your demo
+      MaxSize: '4'    #Reminder: change this for your demo
+      TargetGroupARNs:
+      - Ref: WebAppTargetGroup
+
+  WebAppLB:
+    Type: AWS::ElasticLoadBalancingV2::LoadBalancer
+    Properties:
+      Subnets:
+      - Fn::ImportValue: !Sub "${EnvironmentName}-PUB1-SN"
+      - Fn::ImportValue: !Sub "${EnvironmentName}-PUB2-SN"
+      SecurityGroups:
+      - Ref: LBSecGroup
+
+  Listener:
+    Type: AWS::ElasticLoadBalancingV2::Listener
+    Properties:
+      DefaultActions:
+      - Type: forward
+        TargetGroupArn:
+          Ref: WebAppTargetGroup
+      LoadBalancerArn:
+        Ref: WebAppLB
+      Port: '80'
+      Protocol: HTTP
+
+  ALBListenerRule:
+      Type: AWS::ElasticLoadBalancingV2::ListenerRule
+      Properties:
+        Actions:
+        - Type: forward
+          TargetGroupArn: !Ref 'WebAppTargetGroup'
+        Conditions:
+        - Field: path-pattern
+          Values: [/]
+        ListenerArn: !Ref 'Listener'
+        Priority: 1
+
+  WebAppTargetGroup:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+    Properties:
+      HealthCheckIntervalSeconds: 10
+      HealthCheckPath: /
+      HealthCheckProtocol: HTTP
+      HealthCheckTimeoutSeconds: 8
+      HealthyThresholdCount: 2
+      Port: 80
+      Protocol: HTTP
+      UnhealthyThresholdCount: 5    
+      VpcId: 
+        Fn::ImportValue:
+          Fn::Sub: "${EnvironmentName}-VPCID"
+
+#Let's add Bastion host (Accessed only from my Home IP)
+
+  BastionSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Allow SSH from Home IP only
+      VpcId:
+        Fn::ImportValue:
+             Fn::Sub: ${EnvironmentName}-VPCID  
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIp: !Ref "MyHomeIP"
+      SecurityGroupEgress:
+        - IpProtocol: -1
+          FromPort: -1
+          ToPort: -1
+          CidrIp: 0.0.0.0/0
+
+  BastionHost: 
+    Type: AWS::EC2::Instance
+    Properties:
+      InstanceType: t2.micro
+      ImageId: !Ref BastionIMG      # Amazon Linux 2 AMI in us-east-1
+      KeyName: udacity              #ToDo : change this key with yours
+      NetworkInterfaces: 
+        - DeviceIndex: "0" 
+          GroupSet: 
+            - Ref: "BastionSecurityGroup"
+          SubnetId:
+            Fn::ImportValue:
+             Fn::Sub: ${EnvironmentName}-PUB1-SN
+      Tags: 
+          - Key: Name 
+            Value: !Sub ${EnvironmentName} Bastion Host
+
+
+# Let's create IAM role to Allow our Servers to Access S3
+  RoleForS3Access:
+    Type: 'AWS::IAM::Role'
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - ec2.amazonaws.com
+            Action:
+              - 'sts:AssumeRole'
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AmazonS3FullAccess
+      
+  WebAppInstanceProfile:
+    Type: 'AWS::IAM::InstanceProfile'
+    Properties:
+      Roles:
+        - !Ref RoleForS3Access
+
+
+Outputs: 
+
+  LoadBalancerUrl:
+    Description: The URL of the ALB (Where your WebApp is running)
+    Value: !GetAtt WebAppLB.DNSName

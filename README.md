@@ -9,7 +9,8 @@
 In this project, I have deployed web servers for a highly available web app using CloudFormation. I wrote the code that creates and deploys the infrastructure and application for a simple app from the ground up. I began with deploying the networking components, followed by servers, security roles and software.
 
 ## Project diagram:
-![this digram shows the project Architecture](https://drive.google.com/file/d/1Lk0ki6sjARQ7hqbMtPhDdWSHK9WN6ODo/view?usp=sharing)
+![this digram shows the project Architecture]
+(https://drive.google.com/file/d/1Lk0ki6sjARQ7hqbMtPhDdWSHK9WN6ODo/view?usp=sharing)
 
 
 

@@ -12,8 +12,6 @@ In this project, I have deployed web servers for a highly available web app usin
 ![This digram shows the project Architecture](https://user-images.githubusercontent.com/112473376/210959777-a60fed33-431d-4ca4-bb57-1e4d9203b87e.png)
 
 
-
-
 ## Project files:
 
  1. project-infra.yml :
@@ -55,12 +53,12 @@ aws cloudformation update-stack --stack-name $1 --template-body file://$2 --para
 You will get the URL of your application in the Output section in CloudFormation console.
 
 EX:
+
 ![The output section in CloudFormation Consolet](https://user-images.githubusercontent.com/112473376/210959928-f86cf640-2f66-43d1-b714-33c4a9275f93.JPG)
 
-
 After you click the link you should see a simple website like this:
-<img width="578" alt="simple html website" src="https://user-images.githubusercontent.com/112473376/210960183-6e1ef2f3-7777-403b-86d3-5b61a5240d08.png">
 
+<img width="578" alt="simple html website" src="https://user-images.githubusercontent.com/112473376/210960183-6e1ef2f3-7777-403b-86d3-5b61a5240d08.png">
 
 ## End
 

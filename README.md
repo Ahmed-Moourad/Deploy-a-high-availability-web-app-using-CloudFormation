@@ -62,7 +62,7 @@ After you click the link you should see a simple website like this:
 
 ## End
 
-That's all from me, I hope this was helpful, and I wish you the best of luck during your learning journey.
+That's it from me, I hope this was helpful, and I wish you the best of luck during your learning journey.
 
 
 **~~NOT~~ Free to edit, Hell Yeah!**

@@ -1,0 +1,10 @@
+[
+	{
+		"ParameterKey": "EnvironmentName",
+		"ParameterValue": "Challange"
+	},
+    {
+      "ParameterKey": "AMItoUse",
+      "ParameterValue": "ami-0b5eea76982371e91"
+    }
+]
